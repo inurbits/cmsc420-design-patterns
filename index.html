@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>design-patterns — lecture drafting set</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1117;
+  --bg-panel:#161b22;
+  --bg-sidebar:#010409;
+  --ink:#c9d1d9;
+  --ink-dim:#8b949e;
+  --border:#30363d;
+  --red-bg:rgba(248,81,73,0.12);
+  --red-text:#ff7b72;
+  --red-line:#f85149;
+  --green-bg:rgba(63,185,80,0.12);
+  --green-text:#56d364;
+  --green-line:#3fb950;
+  --blue:#58a6ff;
+  --cat-creational:#d29922;
+  --cat-structural:#3fb950;
+  --cat-behavioral:#a371f7;
+  --font-ui:'Inter',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:15px;line-height:1.55;}
+a{color:var(--blue);text-decoration:none;}
+a:hover{text-decoration:underline;}
+::selection{background:rgba(88,166,255,0.3);}
+
+.app{display:grid;grid-template-columns:270px 1fr;min-height:100vh;align-items:start;}
+
+/* ---------- sidebar ---------- */
+.sidebar{background:var(--bg-sidebar);border-right:1px solid var(--border);padding:18px 0;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.sidebar .repo{padding:0 18px 16px;border-bottom:1px solid var(--border);margin-bottom:10px;}
+.sidebar .repo a.name{font-family:var(--font-mono);font-size:14px;color:var(--ink);font-weight:500;}
+.sidebar .repo .branch{display:inline-flex;align-items:center;gap:6px;margin-top:9px;font-family:var(--font-mono);font-size:12px;color:var(--blue);background:rgba(88,166,255,0.1);padding:3px 9px;border-radius:12px;}
+.tree{padding:0 10px 20px;}
+.folder{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.06em;color:var(--ink-dim);text-transform:uppercase;padding:14px 8px 6px;}
+.file{font-family:var(--font-mono);font-size:13px;color:var(--ink-dim);padding:5px 10px 5px 22px;border-radius:6px;display:flex;justify-content:space-between;gap:6px;}
+.file:hover{background:rgba(255,255,255,0.04);color:var(--ink);}
+.file.active{background:rgba(88,166,255,0.12);color:var(--ink);}
+.file .dot{color:var(--ink-dim);flex:none;}
+.file.active .dot{color:var(--blue);}
+
+/* ---------- main / topbar ---------- */
+.main{padding:0;min-width:0;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 30px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:13px;color:var(--ink-dim);flex-wrap:wrap;gap:8px;}
+.crumb b{color:var(--ink);font-weight:500;}
+.crumb a{color:var(--ink-dim);}
+.crumb a:hover{color:var(--blue);}
+
+.filehead{padding:20px 30px 0;max-width:900px;}
+.filehead .eyebrow{font-family:var(--font-mono);font-size:12px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.1em;margin:0 0 6px;}
+.filehead h1{font-family:var(--font-mono);font-size:26px;font-weight:600;margin:0 0 10px;color:var(--ink);}
+.filehead p.tagline{margin:0 0 8px;color:var(--ink);font-size:15.5px;}
+.filehead p.desc{margin:0 0 18px;color:var(--ink-dim);font-size:14.5px;max-width:760px;}
+.chip{display:inline-block;padding:2px 10px;border-radius:12px;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.04em;font-weight:500;}
+.chip.creational{background:rgba(210,153,34,0.15);color:var(--cat-creational);}
+.chip.structural{background:rgba(63,185,80,0.15);color:var(--cat-structural);}
+.chip.behavioral{background:rgba(163,113,247,0.15);color:var(--cat-behavioral);}
+
+/* ---------- diff ---------- */
+.difftabs{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-top:8px;}
+.difftab{font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:9px 30px;display:flex;align-items:center;gap:8px;}
+.difftab.old{color:var(--red-text);border-right:1px solid var(--border);background:rgba(248,81,73,0.05);}
+.difftab.new{color:var(--green-text);background:rgba(63,185,80,0.05);}
+.difftab .sym{font-weight:700;}
+
+.diffgrid{display:grid;grid-template-columns:1fr 1fr;}
+@media (max-width:920px){.diffgrid{grid-template-columns:1fr;}.app{grid-template-columns:1fr;}.sidebar{position:static;height:auto;}}
+.pane{border-right:1px solid var(--border);min-width:0;}
+.pane:last-child{border-right:none;}
+.pane pre{margin:0;padding:14px 0;font-family:var(--font-mono);font-size:14px;line-height:1.65;overflow-x:auto;white-space:pre;}
+.line{display:grid;grid-template-columns:40px 20px 1fr;padding:0 16px 0 0;}
+.line .num{color:var(--ink-dim);text-align:right;padding-right:12px;user-select:none;opacity:.5;}
+.line .sym{text-align:center;user-select:none;font-weight:700;}
+.pane.old .line.hi{background:var(--red-bg);}
+.pane.old .line.hi .sym{color:var(--red-line);}
+.pane.new .line.hi{background:var(--green-bg);}
+.pane.new .line.hi .sym{color:var(--green-line);}
+.pane.old code{color:#e6a5a1;}
+.pane.new code{color:#a8dcae;}
+.line .comment{color:var(--ink-dim);}
+
+.notes{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border);}
+@media (max-width:920px){.notes{grid-template-columns:1fr;}}
+.notes .n{padding:14px 30px 20px;font-size:14px;color:var(--ink-dim);border-right:1px solid var(--border);}
+.notes .n:last-child{border-right:none;}
+.notes .n b{color:var(--ink);font-weight:600;}
+
+.footnote{display:flex;gap:26px;padding:16px 30px 40px;font-family:var(--font-mono);font-size:12.5px;color:var(--ink-dim);flex-wrap:wrap;justify-content:space-between;}
+.footnote .k{color:var(--ink);}
+.footnote .navlink{color:var(--ink-dim);}
+.footnote .navlink:hover{color:var(--blue);}
+.footnote .navlink.disabled{color:#3a4048;pointer-events:none;}
+
+/* ---------- index / repo home ---------- */
+.repohead{padding:26px 30px 6px;max-width:920px;}
+.repohead h1{font-family:var(--font-mono);font-size:28px;font-weight:600;margin:0 0 8px;}
+.repohead p{color:var(--ink-dim);font-size:15px;margin:0 0 16px;max-width:760px;}
+.repostats{display:flex;gap:18px;font-family:var(--font-mono);font-size:12.5px;color:var(--ink-dim);margin-bottom:22px;flex-wrap:wrap;}
+.repostats .k{color:var(--ink);}
+
+.filetable{margin:0 30px 30px;border:1px solid var(--border);border-radius:8px;overflow:hidden;max-width:1120px;}
+.filetable .group-head{background:var(--bg-panel);font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:10px 18px;color:var(--ink-dim);border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.filetable .group-head:first-child{border-top:none;}
+.filetable .group-head .dot{width:9px;height:9px;border-radius:50%;}
+.filetable .group-head.creational .dot{background:var(--cat-creational);}
+.filetable .group-head.structural .dot{background:var(--cat-structural);}
+.filetable .group-head.behavioral .dot{background:var(--cat-behavioral);}
+.frow{display:grid;grid-template-columns:230px 1fr 90px;gap:14px;align-items:center;padding:10px 18px;border-top:1px solid var(--border);}
+.frow:hover{background:rgba(255,255,255,0.03);}
+.frow .fname{font-family:var(--font-mono);font-size:13.5px;color:var(--ink);}
+.frow .fname .sym{color:var(--ink-dim);margin-right:8px;}
+.frow .fmsg{font-size:13px;color:var(--ink-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.frow .fsheet{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-dim);text-align:right;}
+
+.readme{margin:0 30px 50px;padding:24px 28px;border:1px solid var(--border);border-radius:8px;background:var(--bg-panel);max-width:1120px;}
+.readme h2{font-family:var(--font-mono);font-size:16px;font-weight:600;margin:0 0 12px;color:var(--ink);}
+.readme h3{font-family:var(--font-mono);font-size:14px;font-weight:600;margin:22px 0 8px;color:var(--ink);}
+.readme p{font-size:14.5px;color:var(--ink-dim);margin:0 0 12px;max-width:760px;}
+.readme .legend{display:flex;gap:22px;flex-wrap:wrap;margin-top:6px;}
+.readme .legend span{font-family:var(--font-mono);font-size:13px;display:flex;align-items:center;gap:8px;}
+.readme .legend .sq{width:14px;height:14px;border-radius:3px;}
+.readme .legend .old{background:var(--red-bg);border:1px solid var(--red-line);}
+.readme .legend .new{background:var(--green-bg);border:1px solid var(--green-line);}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar"><div class="repo"><a class="name" href="index.html">design-patterns/</a><div class="branch">&#9906; feature/design-patterns</div></div><nav class="tree"><div class="folder">creational/</div><a class="file" href="patterns/factory-method.html"><span>factory_method.py</span><span class="dot">&middot;</span></a><a class="file" href="patterns/abstract-factory.html"><span>abstract_factory.py</span><span class="dot">&middot;</span></a><a class="file" href="patterns/builder.html"><span>builder.py</span><span class="dot">&middot;</span></a><a class="file" href="patterns/prototype.html"><span>prototype.py</span><span class="dot">&middot;</span></a><a class="file" href="patterns/singleton.html"><span>singleton.py</span><span class="dot">&middot;</span></a><div class="folder">structural/</div><a class="file" href="patterns/adapter.html"><span>adapter.py</span><span class="dot">&middot;</span></a><a class="file" href="patterns/composite.html"><span>composite.py</span><span class="dot">&middot;</span></a><a class="file" href="patterns/decorator.html"><span>decorator.py</span><span class="dot">&middot;</span></a><div class="folder">behavioral/</div><a class="file" href="patterns/command.html"><span>command.py</span><span class="dot">&middot;</span></a><a class="file" href="patterns/iterator.html"><span>iterator.py</span><span class="dot">&middot;</span></a><a class="file" href="patterns/memento.html"><span>memento.py</span><span class="dot">&middot;</span></a><a class="file" href="patterns/null-object.html"><span>null_object.py</span><span class="dot">&middot;</span></a><a class="file" href="patterns/observer.html"><span>observer.py</span><span class="dot">&middot;</span></a><a class="file" href="patterns/state.html"><span>state.py</span><span class="dot">&middot;</span></a><a class="file" href="patterns/strategy.html"><span>strategy.py</span><span class="dot">&middot;</span></a><a class="file" href="patterns/template-method.html"><span>template_method.py</span><span class="dot">&middot;</span></a><a class="file" href="patterns/visitor.html"><span>visitor.py</span><span class="dot">&middot;</span></a></nav></aside>
+  <main class="main">
+
+    <div class="topbar">
+      <div class="crumb"><b>design-patterns</b> / main</div>
+      <div>17 files &middot; 3 folders</div>
+    </div>
+
+    <div class="repohead">
+      <h1>design-patterns/</h1>
+      <p>A compare view of 17 software design patterns including the procedural code that motivates each one, diffed against the object-oriented rewrite that applies it.</p>
+      <div class="repostats">
+        <span><span class="k">17</span> files</span>
+        <span><span class="k">Python 3</span> language</span>
+        <span><span class="k">GoF, 1994</span> source</span>
+      </div>
+    </div>
+
+    <div class="filetable"><div class="group-head creational"><span class="dot"></span>creational/ &mdash; Creational — object creation</div>
+      <a class="frow" href="patterns/factory-method.html">
+        <span class="fname"><span class="sym">&#128196;</span>factory_method.py</span>
+        <span class="fmsg">Delegate object creation to a dedicated method instead of branching on type.</span>
+        <span class="fsheet">C-01</span>
+      </a>
+      <a class="frow" href="patterns/abstract-factory.html">
+        <span class="fname"><span class="sym">&#128196;</span>abstract_factory.py</span>
+        <span class="fmsg">Produce whole families of related objects that are guaranteed to match.</span>
+        <span class="fsheet">C-02</span>
+      </a>
+      <a class="frow" href="patterns/builder.html">
+        <span class="fname"><span class="sym">&#128196;</span>builder.py</span>
+        <span class="fmsg">Assemble a complex object step by step instead of one giant constructor call.</span>
+        <span class="fsheet">C-03</span>
+      </a>
+      <a class="frow" href="patterns/prototype.html">
+        <span class="fname"><span class="sym">&#128196;</span>prototype.py</span>
+        <span class="fmsg">Create new objects by copying a fully-configured template, not rebuilding from scratch.</span>
+        <span class="fsheet">C-04</span>
+      </a>
+      <a class="frow" href="patterns/singleton.html">
+        <span class="fname"><span class="sym">&#128196;</span>singleton.py</span>
+        <span class="fmsg">Guarantee a class has exactly one instance, reached through one controlled access point.</span>
+        <span class="fsheet">C-05</span>
+      </a><div class="group-head structural"><span class="dot"></span>structural/ &mdash; Structural — object composition</div>
+      <a class="frow" href="patterns/adapter.html">
+        <span class="fname"><span class="sym">&#128196;</span>adapter.py</span>
+        <span class="fmsg">Wrap an incompatible interface so it can be used where a different one is expected.</span>
+        <span class="fsheet">S-01</span>
+      </a>
+      <a class="frow" href="patterns/composite.html">
+        <span class="fname"><span class="sym">&#128196;</span>composite.py</span>
+        <span class="fmsg">Treat individual objects and groups of objects through the same uniform interface.</span>
+        <span class="fsheet">S-02</span>
+      </a>
+      <a class="frow" href="patterns/decorator.html">
+        <span class="fname"><span class="sym">&#128196;</span>decorator.py</span>
+        <span class="fmsg">Layer new behavior onto an object by wrapping it, instead of flagging every combination.</span>
+        <span class="fsheet">S-03</span>
+      </a><div class="group-head behavioral"><span class="dot"></span>behavioral/ &mdash; Behavioral — object interaction</div>
+      <a class="frow" href="patterns/command.html">
+        <span class="fname"><span class="sym">&#128196;</span>command.py</span>
+        <span class="fmsg">Turn a request into a stand-alone object so it can be queued, logged, or undone.</span>
+        <span class="fsheet">B-01</span>
+      </a>
+      <a class="frow" href="patterns/iterator.html">
+        <span class="fname"><span class="sym">&#128196;</span>iterator.py</span>
+        <span class="fmsg">Give a collection a uniform way to be walked through, without exposing its internals.</span>
+        <span class="fsheet">B-02</span>
+      </a>
+      <a class="frow" href="patterns/memento.html">
+        <span class="fname"><span class="sym">&#128196;</span>memento.py</span>
+        <span class="fmsg">Capture and restore an object's internal state without exposing that state to the outside.</span>
+        <span class="fsheet">B-03</span>
+      </a>
+      <a class="frow" href="patterns/null-object.html">
+        <span class="fname"><span class="sym">&#128196;</span>null_object.py</span>
+        <span class="fmsg">Replace 'if not None' checks with a real object that simply does nothing.</span>
+        <span class="fsheet">B-04</span>
+      </a>
+      <a class="frow" href="patterns/observer.html">
+        <span class="fname"><span class="sym">&#128196;</span>observer.py</span>
+        <span class="fmsg">Let interested objects subscribe to changes, instead of hard-wiring every dependent call.</span>
+        <span class="fsheet">B-05</span>
+      </a>
+      <a class="frow" href="patterns/state.html">
+        <span class="fname"><span class="sym">&#128196;</span>state.py</span>
+        <span class="fmsg">Let an object change its behavior by swapping the state object it delegates to.</span>
+        <span class="fsheet">B-06</span>
+      </a>
+      <a class="frow" href="patterns/strategy.html">
+        <span class="fname"><span class="sym">&#128196;</span>strategy.py</span>
+        <span class="fmsg">Make an algorithm swappable at runtime instead of branching on a mode flag.</span>
+        <span class="fsheet">B-07</span>
+      </a>
+      <a class="frow" href="patterns/template-method.html">
+        <span class="fname"><span class="sym">&#128196;</span>template_method.py</span>
+        <span class="fmsg">Fix the shape of an algorithm in a base class, letting subclasses fill in only the steps that vary.</span>
+        <span class="fsheet">B-08</span>
+      </a>
+      <a class="frow" href="patterns/visitor.html">
+        <span class="fname"><span class="sym">&#128196;</span>visitor.py</span>
+        <span class="fmsg">Add new operations over a fixed set of classes without touching those classes again.</span>
+        <span class="fsheet">B-09</span>
+      </a></div>
+
+    <div class="readme">
+      <h2>README.md</h2>
+      <p>Each file below is a single pattern shown as a two-file compare: the left pane is a plain, working procedural
+      solution and the specific pain point it runs into as the code grows. The right pane is the same problem solved
+      with the named design pattern, and what actually changes as a result.</p>
+      <h3>Reading the diff</h3>
+      <p>Colors follow the usual compare convention:</p>
+      <div class="legend">
+        <span><span class="sq old"></span>red &mdash; procedural, the &ldquo;before&rdquo;</span>
+        <span><span class="sq new"></span>green &mdash; pattern applied, the &ldquo;after&rdquo;</span>
+      </div>
+    </div>
+
+  </main>
+</div>
+</body>
+</html>

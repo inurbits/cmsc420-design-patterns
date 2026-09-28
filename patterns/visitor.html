@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visitor — design-patterns/behavioral/visitor.py</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1117;
+  --bg-panel:#161b22;
+  --bg-sidebar:#010409;
+  --ink:#c9d1d9;
+  --ink-dim:#8b949e;
+  --border:#30363d;
+  --red-bg:rgba(248,81,73,0.12);
+  --red-text:#ff7b72;
+  --red-line:#f85149;
+  --green-bg:rgba(63,185,80,0.12);
+  --green-text:#56d364;
+  --green-line:#3fb950;
+  --blue:#58a6ff;
+  --cat-creational:#d29922;
+  --cat-structural:#3fb950;
+  --cat-behavioral:#a371f7;
+  --font-ui:'Inter',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-ui);font-size:15px;line-height:1.55;}
+a{color:var(--blue);text-decoration:none;}
+a:hover{text-decoration:underline;}
+::selection{background:rgba(88,166,255,0.3);}
+
+.app{display:grid;grid-template-columns:270px 1fr;min-height:100vh;align-items:start;}
+
+/* ---------- sidebar ---------- */
+.sidebar{background:var(--bg-sidebar);border-right:1px solid var(--border);padding:18px 0;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.sidebar .repo{padding:0 18px 16px;border-bottom:1px solid var(--border);margin-bottom:10px;}
+.sidebar .repo a.name{font-family:var(--font-mono);font-size:14px;color:var(--ink);font-weight:500;}
+.sidebar .repo .branch{display:inline-flex;align-items:center;gap:6px;margin-top:9px;font-family:var(--font-mono);font-size:12px;color:var(--blue);background:rgba(88,166,255,0.1);padding:3px 9px;border-radius:12px;}
+.tree{padding:0 10px 20px;}
+.folder{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.06em;color:var(--ink-dim);text-transform:uppercase;padding:14px 8px 6px;}
+.file{font-family:var(--font-mono);font-size:13px;color:var(--ink-dim);padding:5px 10px 5px 22px;border-radius:6px;display:flex;justify-content:space-between;gap:6px;}
+.file:hover{background:rgba(255,255,255,0.04);color:var(--ink);}
+.file.active{background:rgba(88,166,255,0.12);color:var(--ink);}
+.file .dot{color:var(--ink-dim);flex:none;}
+.file.active .dot{color:var(--blue);}
+
+/* ---------- main / topbar ---------- */
+.main{padding:0;min-width:0;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 30px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:13px;color:var(--ink-dim);flex-wrap:wrap;gap:8px;}
+.crumb b{color:var(--ink);font-weight:500;}
+.crumb a{color:var(--ink-dim);}
+.crumb a:hover{color:var(--blue);}
+
+.filehead{padding:20px 30px 0;max-width:900px;}
+.filehead .eyebrow{font-family:var(--font-mono);font-size:12px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.1em;margin:0 0 6px;}
+.filehead h1{font-family:var(--font-mono);font-size:26px;font-weight:600;margin:0 0 10px;color:var(--ink);}
+.filehead p.tagline{margin:0 0 8px;color:var(--ink);font-size:15.5px;}
+.filehead p.desc{margin:0 0 18px;color:var(--ink-dim);font-size:14.5px;max-width:760px;}
+.chip{display:inline-block;padding:2px 10px;border-radius:12px;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.04em;font-weight:500;}
+.chip.creational{background:rgba(210,153,34,0.15);color:var(--cat-creational);}
+.chip.structural{background:rgba(63,185,80,0.15);color:var(--cat-structural);}
+.chip.behavioral{background:rgba(163,113,247,0.15);color:var(--cat-behavioral);}
+
+/* ---------- diff ---------- */
+.difftabs{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-top:8px;}
+.difftab{font-family:var(--font-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:9px 30px;display:flex;align-items:center;gap:8px;}
+.difftab.old{color:var(--red-text);border-right:1px solid var(--border);background:rgba(248,81,73,0.05);}
+.difftab.new{color:var(--green-text);background:rgba(63,185,80,0.05);}
+.difftab .sym{font-weight:700;}
+
+.diffgrid{display:grid;grid-template-columns:1fr 1fr;}
+@media (max-width:920px){.diffgrid{grid-template-columns:1fr;}.app{grid-template-columns:1fr;}.sidebar{position:static;height:auto;}}
+.pane{border-right:1px solid var(--border);min-width:0;}
+.pane:last-child{border-right:none;}
+.pane pre{margin:0;padding:14px 0;font-family:var(--font-mono);font-size:14px;line-height:1.65;overflow-x:auto;white-space:pre;}
+.line{display:grid;grid-template-columns:40px 20px 1fr;padding:0 16px 0 0;}
+.line .num{color:var(--ink-dim);text-align:right;padding-right:12px;user-select:none;opacity:.5;}
+.line .sym{text-align:center;user-select:none;font-weight:700;}
+.pane.old .line.hi{background:var(--red-bg);}
+.pane.old .line.hi .sym{color:var(--red-line);}
+.pane.new .line.hi{background:var(--green-bg);}
+.pane.new .line.hi .sym{color:var(--green-line);}
+.pane.old code{color:#e6a5a1;}
+.pane.new code{color:#a8dcae;}
+.line .comment{color:var(--ink-dim);}
+
+.notes{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border);}
+@media (max-width:920px){.notes{grid-template-columns:1fr;}}
+.notes .n{padding:14px 30px 20px;font-size:14px;color:var(--ink-dim);border-right:1px solid var(--border);}
+.notes .n:last-child{border-right:none;}
+.notes .n b{color:var(--ink);font-weight:600;}
+
+.footnote{display:flex;gap:26px;padding:16px 30px 40px;font-family:var(--font-mono);font-size:12.5px;color:var(--ink-dim);flex-wrap:wrap;justify-content:space-between;}
+.footnote .k{color:var(--ink);}
+.footnote .navlink{color:var(--ink-dim);}
+.footnote .navlink:hover{color:var(--blue);}
+.footnote .navlink.disabled{color:#3a4048;pointer-events:none;}
+
+/* ---------- index / repo home ---------- */
+.repohead{padding:26px 30px 6px;max-width:920px;}
+.repohead h1{font-family:var(--font-mono);font-size:28px;font-weight:600;margin:0 0 8px;}
+.repohead p{color:var(--ink-dim);font-size:15px;margin:0 0 16px;max-width:760px;}
+.repostats{display:flex;gap:18px;font-family:var(--font-mono);font-size:12.5px;color:var(--ink-dim);margin-bottom:22px;flex-wrap:wrap;}
+.repostats .k{color:var(--ink);}
+
+.filetable{margin:0 30px 30px;border:1px solid var(--border);border-radius:8px;overflow:hidden;max-width:1120px;}
+.filetable .group-head{background:var(--bg-panel);font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:10px 18px;color:var(--ink-dim);border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.filetable .group-head:first-child{border-top:none;}
+.filetable .group-head .dot{width:9px;height:9px;border-radius:50%;}
+.filetable .group-head.creational .dot{background:var(--cat-creational);}
+.filetable .group-head.structural .dot{background:var(--cat-structural);}
+.filetable .group-head.behavioral .dot{background:var(--cat-behavioral);}
+.frow{display:grid;grid-template-columns:230px 1fr 90px;gap:14px;align-items:center;padding:10px 18px;border-top:1px solid var(--border);}
+.frow:hover{background:rgba(255,255,255,0.03);}
+.frow .fname{font-family:var(--font-mono);font-size:13.5px;color:var(--ink);}
+.frow .fname .sym{color:var(--ink-dim);margin-right:8px;}
+.frow .fmsg{font-size:13px;color:var(--ink-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.frow .fsheet{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-dim);text-align:right;}
+
+.readme{margin:0 30px 50px;padding:24px 28px;border:1px solid var(--border);border-radius:8px;background:var(--bg-panel);max-width:1120px;}
+.readme h2{font-family:var(--font-mono);font-size:16px;font-weight:600;margin:0 0 12px;color:var(--ink);}
+.readme h3{font-family:var(--font-mono);font-size:14px;font-weight:600;margin:22px 0 8px;color:var(--ink);}
+.readme p{font-size:14.5px;color:var(--ink-dim);margin:0 0 12px;max-width:760px;}
+.readme .legend{display:flex;gap:22px;flex-wrap:wrap;margin-top:6px;}
+.readme .legend span{font-family:var(--font-mono);font-size:13px;display:flex;align-items:center;gap:8px;}
+.readme .legend .sq{width:14px;height:14px;border-radius:3px;}
+.readme .legend .old{background:var(--red-bg);border:1px solid var(--red-line);}
+.readme .legend .new{background:var(--green-bg);border:1px solid var(--green-line);}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar"><div class="repo"><a class="name" href="../index.html">design-patterns/</a><div class="branch">&#9906; feature/design-patterns</div></div><nav class="tree"><div class="folder">creational/</div><a class="file" href="factory-method.html"><span>factory_method.py</span><span class="dot">&middot;</span></a><a class="file" href="abstract-factory.html"><span>abstract_factory.py</span><span class="dot">&middot;</span></a><a class="file" href="builder.html"><span>builder.py</span><span class="dot">&middot;</span></a><a class="file" href="prototype.html"><span>prototype.py</span><span class="dot">&middot;</span></a><a class="file" href="singleton.html"><span>singleton.py</span><span class="dot">&middot;</span></a><div class="folder">structural/</div><a class="file" href="adapter.html"><span>adapter.py</span><span class="dot">&middot;</span></a><a class="file" href="composite.html"><span>composite.py</span><span class="dot">&middot;</span></a><a class="file" href="decorator.html"><span>decorator.py</span><span class="dot">&middot;</span></a><div class="folder">behavioral/</div><a class="file" href="command.html"><span>command.py</span><span class="dot">&middot;</span></a><a class="file" href="iterator.html"><span>iterator.py</span><span class="dot">&middot;</span></a><a class="file" href="memento.html"><span>memento.py</span><span class="dot">&middot;</span></a><a class="file" href="null-object.html"><span>null_object.py</span><span class="dot">&middot;</span></a><a class="file" href="observer.html"><span>observer.py</span><span class="dot">&middot;</span></a><a class="file" href="state.html"><span>state.py</span><span class="dot">&middot;</span></a><a class="file" href="strategy.html"><span>strategy.py</span><span class="dot">&middot;</span></a><a class="file" href="template-method.html"><span>template_method.py</span><span class="dot">&middot;</span></a><a class="file active" href="visitor.html"><span>visitor.py</span><span class="dot">&#9679;</span></a></nav></aside>
+  <main class="main">
+
+    <div class="topbar">
+      <div class="crumb"><a href="../index.html">design-patterns</a> / <a href="../index.html">behavioral</a> / <b>visitor.py</b></div>
+      <div>compare &middot; procedural &rarr; pattern</div>
+    </div>
+
+    <div class="filehead">
+      <p class="eyebrow">Sheet B-09 &middot; <span class="chip behavioral">behavioral</span></p>
+      <h1>Visitor</h1>
+      <p class="tagline">Add new operations over a fixed set of classes without touching those classes again.</p>
+      <p class="desc">Scale &minus; N shapes : N ops with 0 edits</p>
+    </div>
+
+    <div class="difftabs">
+      <div class="difftab old"><span class="sym">&minus;</span> before &middot; procedural</div>
+      <div class="difftab new"><span class="sym">+</span> after &middot; Visitor pattern</div>
+    </div>
+    <div class="diffgrid">
+      <div class="pane old"><pre><code><span class="line hi"><span class="num">1</span><span class="sym">&minus;</span><span>shapes = [{"type": "circle", "r": 3}, {"type": "square", "s": 4}]</span></span><span class="line hi"><span class="num">2</span><span class="sym">&minus;</span><span>&nbsp;</span></span><span class="line hi"><span class="num">3</span><span class="sym">&minus;</span><span>def total_area(shapes):</span></span><span class="line hi"><span class="num">4</span><span class="sym">&minus;</span><span>    total = 0</span></span><span class="line hi"><span class="num">5</span><span class="sym">&minus;</span><span>    for s in shapes:</span></span><span class="line hi"><span class="num">6</span><span class="sym">&minus;</span><span>        if s["type"] == "circle":</span></span><span class="line hi"><span class="num">7</span><span class="sym">&minus;</span><span>            total += 3.14159 * s["r"] ** 2</span></span><span class="line hi"><span class="num">8</span><span class="sym">&minus;</span><span>        elif s["type"] == "square":</span></span><span class="line hi"><span class="num">9</span><span class="sym">&minus;</span><span>            total += s["s"] ** 2</span></span><span class="line hi"><span class="num">10</span><span class="sym">&minus;</span><span>    return total</span></code></pre></div>
+      <div class="pane new"><pre><code><span class="line hi"><span class="num">1</span><span class="sym">+</span><span>from abc import ABC, abstractmethod</span></span><span class="line hi"><span class="num">2</span><span class="sym">+</span><span>&nbsp;</span></span><span class="line hi"><span class="num">3</span><span class="sym">+</span><span>class Shape(ABC):</span></span><span class="line hi"><span class="num">4</span><span class="sym">+</span><span>    @abstractmethod</span></span><span class="line hi"><span class="num">5</span><span class="sym">+</span><span>    def accept(self, visitor): ...</span></span><span class="line hi"><span class="num">6</span><span class="sym">+</span><span>&nbsp;</span></span><span class="line hi"><span class="num">7</span><span class="sym">+</span><span>class Circle(Shape):</span></span><span class="line hi"><span class="num">8</span><span class="sym">+</span><span>    def __init__(self, r): self.r = r</span></span><span class="line hi"><span class="num">9</span><span class="sym">+</span><span>    def accept(self, visitor): return visitor.visit_circle(self)</span></span><span class="line hi"><span class="num">10</span><span class="sym">+</span><span>&nbsp;</span></span><span class="line hi"><span class="num">11</span><span class="sym">+</span><span>class Square(Shape):</span></span><span class="line hi"><span class="num">12</span><span class="sym">+</span><span>    def __init__(self, s): self.s = s</span></span><span class="line hi"><span class="num">13</span><span class="sym">+</span><span>    def accept(self, visitor): return visitor.visit_square(self)</span></span><span class="line hi"><span class="num">14</span><span class="sym">+</span><span>&nbsp;</span></span><span class="line hi"><span class="num">15</span><span class="sym">+</span><span>class AreaVisitor:</span></span><span class="line hi"><span class="num">16</span><span class="sym">+</span><span>    def visit_circle(self, c): return 3.14159 * c.r ** 2</span></span><span class="line hi"><span class="num">17</span><span class="sym">+</span><span>    def visit_square(self, s): return s.s ** 2</span></span><span class="line hi"><span class="num">18</span><span class="sym">+</span><span>&nbsp;</span></span><span class="line hi"><span class="num">19</span><span class="sym">+</span><span><span class="comment"># a new operation is a new visitor - shapes never change</span></span></span><span class="line hi"><span class="num">20</span><span class="sym">+</span><span>shapes = [Circle(3), Square(4)]</span></span><span class="line hi"><span class="num">21</span><span class="sym">+</span><span>total = sum(s.accept(AreaVisitor()) for s in shapes)</span></span></code></pre></div>
+    </div>
+
+    <div class="notes">
+      <div class="n"><b>Pain point:</b> A new operation means another isinstance sweep over every shape type, scattered across the codebase.</div>
+      <div class="n"><b>What changes:</b> A new operation is just a new visitor class. Circle and Square never change to support it.</div>
+    </div>
+
+    <div class="footnote">
+      <a class="navlink" href="template-method.html">&larr; B-08 Template Method</a>
+      <a class="navlink" href="../index.html">repo root</a>
+      <span class="navlink disabled">end of set &rarr;</span>
+    </div>
+
+  </main>
+</div>
+</body>
+</html>
